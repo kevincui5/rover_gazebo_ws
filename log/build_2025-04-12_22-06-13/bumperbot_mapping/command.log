@@ -1,0 +1,4 @@
+Invoking command in '/home/kevin/rover_ws/build/bumperbot_mapping': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --build /home/kevin/rover_ws/build/bumperbot_mapping -- -j6 -l6
+Invoked command in '/home/kevin/rover_ws/build/bumperbot_mapping' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --build /home/kevin/rover_ws/build/bumperbot_mapping -- -j6 -l6
+Invoking command in '/home/kevin/rover_ws/build/bumperbot_mapping': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --install /home/kevin/rover_ws/build/bumperbot_mapping
+Invoked command in '/home/kevin/rover_ws/build/bumperbot_mapping' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --install /home/kevin/rover_ws/build/bumperbot_mapping

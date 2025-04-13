@@ -1,1 +1,1 @@
-/opt/ros/humble
+/home/kevin/osr_ws/install/osr_mapping:/home/kevin/osr_ws/install/osr_bringup:/home/kevin/osr_ws/install/osr_localization:/home/kevin/osr_ws/install/osr_control:/home/kevin/osr_ws/install/osr_interfaces:/home/kevin/osr_ws/install/osr_gazebo:/home/kevin/rover_ws/install/bumperbot_bringup:/home/kevin/rover_ws/install/bumperbot_mapping:/home/kevin/rover_ws/install/bumperbot_localization:/home/kevin/rover_ws/install/bumperbot_description:/home/kevin/rover_ws/install/bumperbot_controller:/opt/ros/humble

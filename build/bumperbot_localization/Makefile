@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kevin/bumperbot_ws/src/bumperbot_localization
+CMAKE_SOURCE_DIR = /home/kevin/rover_ws/src/bumperbot_localization
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kevin/bumperbot_ws/build/bumperbot_localization
+CMAKE_BINARY_DIR = /home/kevin/rover_ws/build/bumperbot_localization
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -142,9 +142,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kevin/bumperbot_ws/build/bumperbot_localization/CMakeFiles /home/kevin/bumperbot_ws/build/bumperbot_localization//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kevin/rover_ws/build/bumperbot_localization/CMakeFiles /home/kevin/rover_ws/build/bumperbot_localization//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kevin/bumperbot_ws/build/bumperbot_localization/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kevin/rover_ws/build/bumperbot_localization/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

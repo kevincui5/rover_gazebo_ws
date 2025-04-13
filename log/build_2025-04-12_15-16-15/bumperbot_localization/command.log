@@ -1,4 +1,0 @@
-Invoking command in '/home/kevin/bumperbot_ws/build/bumperbot_localization': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kevin/bumperbot_ws/build/bumperbot_localization -- -j6 -l6
-Invoked command in '/home/kevin/bumperbot_ws/build/bumperbot_localization' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kevin/bumperbot_ws/build/bumperbot_localization -- -j6 -l6
-Invoking command in '/home/kevin/bumperbot_ws/build/bumperbot_localization': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kevin/bumperbot_ws/build/bumperbot_localization
-Invoked command in '/home/kevin/bumperbot_ws/build/bumperbot_localization' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kevin/bumperbot_ws/build/bumperbot_localization

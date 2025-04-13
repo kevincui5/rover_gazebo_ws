@@ -90,7 +90,17 @@ def generate_launch_description():
     wheel_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["bumperbot_controller", 
+        arguments=["wheel_controller", 
+                   "--controller-manager", 
+                   "/controller_manager"
+        ],
+        # condition=UnlessCondition(use_simple_controller),
+    )
+
+    servo_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["servo_controller", 
                    "--controller-manager", 
                    "/controller_manager"
         ],
@@ -100,24 +110,15 @@ def generate_launch_description():
     simple_controller = GroupAction(
         # condition=IfCondition(use_simple_controller),
         actions=[
-            Node(
-                package="controller_manager",
-                executable="spawner",
-                # arguments=["simple_velocity_controller", 
-                arguments=["wheel_controller", 
-                           
-                        "--controller-manager", 
-                        "/controller_manager"
-                ]
-            ),
             # Node(
-            #     package="bumperbot_controller",
-            #     executable="simple_controller.py",
-            #     parameters=[
-            #         {"wheel_radius": wheel_radius,
-            #         "wheel_separation": wheel_separation,
-            #         "use_sim_time": use_sim_time}],
-            #     condition=IfCondition(use_python),
+            #     package="controller_manager",
+            #     executable="spawner",
+            #     # arguments=["simple_velocity_controller", 
+            #     arguments=["wheel_controller", 
+                           
+            #             "--controller-manager", 
+            #             "/controller_manager"
+            #     ]
             # ),
             Node(
                 package="bumperbot_controller",
@@ -142,6 +143,7 @@ def generate_launch_description():
             joint_state_broadcaster_spawner,
             wheel_controller_spawner,
             simple_controller,
+            servo_controller_spawner
             # noisy_controller_launch,
         ]
     )

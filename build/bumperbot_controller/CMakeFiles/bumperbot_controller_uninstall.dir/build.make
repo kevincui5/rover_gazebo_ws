@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kevin/bumperbot_ws/src/bumperbot_controller
+CMAKE_SOURCE_DIR = /home/kevin/rover_ws/src/bumperbot_controller
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kevin/bumperbot_ws/build/bumperbot_controller
+CMAKE_BINARY_DIR = /home/kevin/rover_ws/build/bumperbot_controller
 
 # Utility rule file for bumperbot_controller_uninstall.
 
@@ -67,7 +67,7 @@ include CMakeFiles/bumperbot_controller_uninstall.dir/compiler_depend.make
 include CMakeFiles/bumperbot_controller_uninstall.dir/progress.make
 
 CMakeFiles/bumperbot_controller_uninstall:
-	/usr/bin/cmake -P /home/kevin/bumperbot_ws/build/bumperbot_controller/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
+	/usr/bin/cmake -P /home/kevin/rover_ws/build/bumperbot_controller/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
 
 bumperbot_controller_uninstall: CMakeFiles/bumperbot_controller_uninstall
 bumperbot_controller_uninstall: CMakeFiles/bumperbot_controller_uninstall.dir/build.make
@@ -82,6 +82,6 @@ CMakeFiles/bumperbot_controller_uninstall.dir/clean:
 .PHONY : CMakeFiles/bumperbot_controller_uninstall.dir/clean
 
 CMakeFiles/bumperbot_controller_uninstall.dir/depend:
-	cd /home/kevin/bumperbot_ws/build/bumperbot_controller && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kevin/bumperbot_ws/src/bumperbot_controller /home/kevin/bumperbot_ws/src/bumperbot_controller /home/kevin/bumperbot_ws/build/bumperbot_controller /home/kevin/bumperbot_ws/build/bumperbot_controller /home/kevin/bumperbot_ws/build/bumperbot_controller/CMakeFiles/bumperbot_controller_uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/kevin/rover_ws/build/bumperbot_controller && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kevin/rover_ws/src/bumperbot_controller /home/kevin/rover_ws/src/bumperbot_controller /home/kevin/rover_ws/build/bumperbot_controller /home/kevin/rover_ws/build/bumperbot_controller /home/kevin/rover_ws/build/bumperbot_controller/CMakeFiles/bumperbot_controller_uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/bumperbot_controller_uninstall.dir/depend
 
