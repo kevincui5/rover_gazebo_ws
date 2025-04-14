@@ -1,0 +1,88 @@
+[0.020s] Invoking command in '/home/kevin/rover_ws/build/rover_utils': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake /home/kevin/rover_ws/src/rover_utils -DCMAKE_INSTALL_PREFIX=/home/kevin/rover_ws/install/rover_utils
+[0.296s] -- The C compiler identification is GNU 11.4.0
+[0.541s] -- The CXX compiler identification is GNU 11.4.0
+[0.554s] -- Detecting C compiler ABI info
+[0.638s] -- Detecting C compiler ABI info - done
+[0.645s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.646s] -- Detecting C compile features
+[0.646s] -- Detecting C compile features - done
+[0.650s] -- Detecting CXX compiler ABI info
+[0.733s] -- Detecting CXX compiler ABI info - done
+[0.740s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.741s] -- Detecting CXX compile features
+[0.741s] -- Detecting CXX compile features - done
+[0.747s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.905s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[3.532s] -- Found rclcpp: 16.0.12 (/opt/ros/humble/share/rclcpp/cmake)
+[4.918s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[4.926s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[4.939s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[4.957s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[4.978s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[5.044s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[5.049s] -- Found rmw_cyclonedds_cpp: 1.3.4 (/opt/ros/humble/share/rmw_cyclonedds_cpp/cmake)
+[5.087s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[5.101s] -- Looking for pthread.h
+[5.196s] -- Looking for pthread.h - found
+[5.196s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[5.268s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[5.269s] -- Found Threads: TRUE  
+[5.362s] -- Found rclpy: 3.3.16 (/opt/ros/humble/share/rclpy/cmake)
+[5.367s] -- Found geometry_msgs: 4.8.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+[5.400s] -- Found sensor_msgs: 4.8.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[5.436s] -- Found twist_mux_msgs: 3.0.1 (/opt/ros/humble/share/twist_mux_msgs/cmake)
+[5.535s] -- Found rclcpp_action: 16.0.12 (/opt/ros/humble/share/rclcpp_action/cmake)
+[5.554s] -- Found visualization_msgs: 4.8.0 (/opt/ros/humble/share/visualization_msgs/cmake)
+[5.740s] -- Configuring done
+[5.751s] -- Generating done
+[5.754s] -- Build files have been written to: /home/kevin/rover_ws/build/rover_utils
+[5.767s] Invoked command in '/home/kevin/rover_ws/build/rover_utils' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake /home/kevin/rover_ws/src/rover_utils -DCMAKE_INSTALL_PREFIX=/home/kevin/rover_ws/install/rover_utils
+[5.770s] Invoking command in '/home/kevin/rover_ws/build/rover_utils': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --build /home/kevin/rover_ws/build/rover_utils -- -j6 -l6
+[5.836s] [ 50%] [32mBuilding CXX object CMakeFiles/safety_stop.dir/src/safety_stop.cpp.o[0m
+[5.848s] [ 50%] Built target ament_cmake_python_copy_rover_utils
+[6.279s] running egg_info
+[6.280s] creating rover_utils.egg-info
+[6.280s] writing rover_utils.egg-info/PKG-INFO
+[6.280s] writing dependency_links to rover_utils.egg-info/dependency_links.txt
+[6.280s] writing top-level names to rover_utils.egg-info/top_level.txt
+[6.280s] writing manifest file 'rover_utils.egg-info/SOURCES.txt'
+[6.282s] reading manifest file 'rover_utils.egg-info/SOURCES.txt'
+[6.282s] writing manifest file 'rover_utils.egg-info/SOURCES.txt'
+[6.307s] [ 50%] Built target ament_cmake_python_build_rover_utils_egg
+[19.347s] [100%] [32m[1mLinking CXX executable safety_stop[0m
+[20.194s] [100%] Built target safety_stop
+[20.202s] Invoked command in '/home/kevin/rover_ws/build/rover_utils' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --build /home/kevin/rover_ws/build/rover_utils -- -j6 -l6
+[20.204s] Invoking command in '/home/kevin/rover_ws/build/rover_utils': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --install /home/kevin/rover_ws/build/rover_utils
+[20.211s] -- Install configuration: ""
+[20.211s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/pythonpath.sh
+[20.211s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/pythonpath.dsv
+[20.211s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils-0.0.0-py3.10.egg-info
+[20.211s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils-0.0.0-py3.10.egg-info/PKG-INFO
+[20.211s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils-0.0.0-py3.10.egg-info/top_level.txt
+[20.212s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils-0.0.0-py3.10.egg-info/dependency_links.txt
+[20.212s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils-0.0.0-py3.10.egg-info/SOURCES.txt
+[20.212s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils
+[20.212s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils/__init__.py
+[20.212s] -- Installing: /home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils/safety_stop.py
+[20.245s] Listing '/home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils'...
+[20.245s] Compiling '/home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils/__init__.py'...
+[20.245s] Compiling '/home/kevin/rover_ws/install/rover_utils/local/lib/python3.10/dist-packages/rover_utils/safety_stop.py'...
+[20.250s] -- Installing: /home/kevin/rover_ws/install/rover_utils/lib/rover_utils/safety_stop
+[20.254s] -- Set runtime path of "/home/kevin/rover_ws/install/rover_utils/lib/rover_utils/safety_stop" to ""
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/lib/rover_utils/safety_stop.py
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/ament_index/resource_index/package_run_dependencies/rover_utils
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/ament_index/resource_index/parent_prefix_path/rover_utils
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/ament_prefix_path.sh
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/ament_prefix_path.dsv
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/path.sh
+[20.254s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/environment/path.dsv
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/local_setup.bash
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/local_setup.sh
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/local_setup.zsh
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/local_setup.dsv
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/package.dsv
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/ament_index/resource_index/packages/rover_utils
+[20.255s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/cmake/rover_utilsConfig.cmake
+[20.256s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/cmake/rover_utilsConfig-version.cmake
+[20.256s] -- Installing: /home/kevin/rover_ws/install/rover_utils/share/rover_utils/package.xml
+[20.258s] Invoked command in '/home/kevin/rover_ws/build/rover_utils' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/kevin/osr_ws/install/osr_control:/opt/ros/humble /usr/bin/cmake --install /home/kevin/rover_ws/build/rover_utils
