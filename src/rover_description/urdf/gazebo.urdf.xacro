@@ -150,7 +150,7 @@
       <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu">
       </plugin>
       <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
-        <render_engine>ogre2</render_engine>
+        <!-- <render_engine>ogre2</render_engine> -->
       </plugin>
     </xacro:if>
 
@@ -162,35 +162,61 @@
       <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
       </plugin>
       <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-        <render_engine>ogre2</render_engine>
+        <!-- <render_engine>ogre2</render_engine> -->
       </plugin>
     </xacro:unless>
   </gazebo>  
-  <!-- <gazebo>
-    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <parameters>$(find rover_controller)/config/controller_velocity.yaml</parameters>
-    </plugin>
-  </gazebo> -->
 
+  <!-- IMU -->
   <gazebo reference="imu_link">
-      <gravity>true</gravity>
-      <sensor name="imu_sensor" type="imu">
-      <always_on>true</always_on>
-      <update_rate>100</update_rate>
-      <visualize>true</visualize>
-      <topic>"imu"</topic>
-      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-          <topicName>imu</topicName>
-          <bodyName>imu_link</bodyName>
-          <updateRateHZ>100.0</updateRateHZ>
-          <gaussianNoise>0.0</gaussianNoise>
-          <xyzOffset>0 0 0</xyzOffset>
-          <rpyOffset>0 0 0</rpyOffset>
-          <frameName>imu_link</frameName>
-          <initialOrientationAsReference>false</initialOrientationAsReference>
-      </plugin>
-      <pose>0 0 0 0 0 0</pose>
-      </sensor>
+    <sensor name="imu" type="imu">
+        <always_on>true</always_on>
+        <update_rate>100</update_rate>
+        <gz_frame_id>imu_link</gz_frame_id>
+        <topic>imu</topic>
+        <imu>
+          <angular_velocity>
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>2e-4</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>2e-4</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>2e-4</stddev>
+              </noise>
+            </z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>1.7e-2</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>1.7e-2</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>1.7e-2</stddev>
+              </noise>
+            </z>
+          </linear_acceleration>
+        </imu>
+    </sensor>
   </gazebo>
 
   <!-- 2D Laser Sensor -->
@@ -221,13 +247,6 @@
           <stddev>0.01</stddev>
         </noise>
       </lidar>
-      <!-- <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
-          <ros>
-              <argument>~/out:=scan</argument>
-          </ros>
-          <output_type>sensor_msgs/LaserScan</output_type>
-          <frame_name>laser_link</frame_name>
-      </plugin> -->
     </sensor>
   </gazebo>
 

@@ -4,6 +4,9 @@ source;share/rover_localization/hook/cmake_prefix_path.sh
 source;share/rover_localization/hook/path.ps1
 source;share/rover_localization/hook/path.dsv
 source;share/rover_localization/hook/path.sh
+source;share/rover_localization/hook/pythonpath.ps1
+source;share/rover_localization/hook/pythonpath.dsv
+source;share/rover_localization/hook/pythonpath.sh
 source;share/rover_localization/hook/pythonscriptspath.ps1
 source;share/rover_localization/hook/pythonscriptspath.dsv
 source;share/rover_localization/hook/pythonscriptspath.sh

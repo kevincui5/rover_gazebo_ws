@@ -101,7 +101,7 @@ public:
         joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback, this, _1));
         odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/rover_controller/odom", 10);
         imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-            "imu_plugin/out", 1, std::bind(&SimpleController::imuCallback, this, std::placeholders::_1));
+            "imu/out", 1, std::bind(&SimpleController::imuCallback, this, std::placeholders::_1));
 
         transform_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
         // transform_stamped_.header.frame_id = "odom";
@@ -332,10 +332,10 @@ public:
 
         pre_dl = current_dl;
 
-        x_postion += dl * cos(theta);
-        y_postion += dl * sin(theta);
-        // RCLCPP_INFO(this->get_logger(), "x_position: %f, y_position: %f", x_postion, y_postion);
-
+        x_postion += dl * cos(angle);
+        y_postion += dl * sin(angle);
+        RCLCPP_INFO(this->get_logger(), "x_position: %f, y_position: %f", x_postion, y_postion);
+        RCLCPP_INFO(this->get_logger(), "****angle: %f", angle);
         odom_msg.header.stamp = this->get_clock()->now();
         odom_msg.header.frame_id = "odom";
 

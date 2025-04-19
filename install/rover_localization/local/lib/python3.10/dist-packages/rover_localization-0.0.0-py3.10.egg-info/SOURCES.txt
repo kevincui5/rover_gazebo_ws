@@ -1,9 +1,0 @@
-setup.py
-rover_localization/__init__.py
-rover_localization/imu_republisher.py
-rover_localization/kalman_filter.py
-rover_localization/odometry_motion_model.py
-rover_localization.egg-info/PKG-INFO
-rover_localization.egg-info/SOURCES.txt
-rover_localization.egg-info/dependency_links.txt
-rover_localization.egg-info/top_level.txt

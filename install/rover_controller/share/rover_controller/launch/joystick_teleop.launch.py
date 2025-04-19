@@ -63,21 +63,21 @@ def generate_launch_description():
             respawn=True,
             parameters=[
                 # {"scale_linear.x": 0.4},  # scale to apply to drive speed, in m/s: drive_motor_rpm * 2pi / 60 * wheel radius * slowdown_factor
-                {"scale_linear.x": 0.20},  # scale to apply to drive speed, in m/s: drive_motor_rpm * 2pi / 60 * wheel radius * slowdown_factor
+                {"scale_linear.x": 0.40},  # scale to apply to drive speed, in m/s: drive_motor_rpm * 2pi / 60 * wheel radius * slowdown_factor
                 # {"axis_linear.x": 4},
                 {"axis_linear.x": 1},
                 # {"axis_angular.yaw": 0},  # which joystick axis to use for driving
-                {"axis_angular.yaw": 0},  # which joystick axis to use for driving
+                {"axis_angular.yaw": 3},  # which joystick axis to use for driving
                 # {"scale_angular.yaw": 1.25},  # scale to apply to angular speed, in rad/s: scale_linear / min_radius(=0.45m)
-                {"axis_angular.pitch": -1},  # axis to use for in-place rotation
-                {"scale_angular.yaw": 0.02},  # scale to apply to angular speed, in rad/s: scale_linear / min_radius(=0.45m)
-                {"scale_angular.pitch": 0.02},  # scale to apply to angular speed, in rad/s: scale_linear / min_radius(=0.45m)
+                {"axis_angular.pitch": 4},  # axis to use for in-place rotation
+                {"scale_angular.yaw": 0.05},  # scale to apply to angular speed, in rad/s: scale_linear / min_radius(=0.45m)
+                {"scale_angular.pitch": 0.0},  # scale to apply to angular speed, in rad/s: scale_linear / min_radius(=0.45m)
                 {"scale_angular_turbo.yaw": 0.55},  # scale to apply to angular speed, in rad/s: scale_linear_turbo / min_radius
-                {"scale_linear_turbo.x": 0.78},  # scale to apply to linear speed, in m/s
+                {"scale_linear_turbo.x": 0.90},  # scale to apply to linear speed, in m/s
                 # {"enable_button": 4},  # which button to press to enable movement
-                {"enable_button": 7},  # which button to press to enable movement
+                {"enable_button": 5},  # which button to press to enable movement
                 # {"enable_turbo_button": 5},  # -1 to disable turbo
-                {"enable_turbo_button": 4},  # -1 to disable turbo
+                {"enable_turbo_button": 3},  # -1 to disable turbo
                 {"publish_stamped_twist": True},  # publish a stamped twist message
             ],
             remappings=[
@@ -102,8 +102,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             use_sim_time_arg,
-            joy_teleop2,
-            joy_node2,
+            joy_teleop,
+            joy_node,
             twist_mux_launch,
             twist_relay_node,
         ]

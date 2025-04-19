@@ -5,7 +5,7 @@ set(rover_controller_BUILD_DEPENDS "trajectory_msgs" "tf2_geometry_msgs" "rclcpp
 set(rover_controller_BUILDTOOL_DEPENDS "ament_cmake" "ament_cmake_python")
 set(rover_controller_BUILD_EXPORT_DEPENDS "rclcpp" "rclpy" "geometry_msgs" "std_msgs" "sensor_msgs" "nav_msgs" "tf2_ros" "tf2" "eigen")
 set(rover_controller_BUILDTOOL_EXPORT_DEPENDS )
-set(rover_controller_EXEC_DEPENDS "tf_transformations" "ros2launch" "robot_state_publisher" "xacro" "controller_manager" "joy" "joy_teleop" "ros2_controllers" "ros2_control" "twist_mux" "rclcpp" "rclpy" "geometry_msgs" "std_msgs" "sensor_msgs" "nav_msgs" "tf2_ros" "tf2" "eigen")
+set(rover_controller_EXEC_DEPENDS "tf_transformations" "ros2launch" "robot_state_publisher" "xacro" "controller_manager" "joy" "teleop_twist_joy" "ros2_controllers" "ros2_control" "twist_mux" "rclcpp" "rclpy" "geometry_msgs" "std_msgs" "sensor_msgs" "nav_msgs" "tf2_ros" "tf2" "eigen")
 set(rover_controller_TEST_DEPENDS "ament_lint_auto" "ament_lint_common")
 set(rover_controller_GROUP_DEPENDS )
 set(rover_controller_MEMBER_OF_GROUPS )

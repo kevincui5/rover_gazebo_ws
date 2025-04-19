@@ -112,6 +112,7 @@ $env:COLCON_CURRENT_PREFIX=(Get-Item $PSCommandPath).Directory.Parent.Parent.Ful
 
 colcon_package_source_powershell_script "$env:COLCON_CURRENT_PREFIX\share/rover_localization/hook/cmake_prefix_path.ps1"
 colcon_package_source_powershell_script "$env:COLCON_CURRENT_PREFIX\share/rover_localization/hook/path.ps1"
+colcon_package_source_powershell_script "$env:COLCON_CURRENT_PREFIX\share/rover_localization/hook/pythonpath.ps1"
 colcon_package_source_powershell_script "$env:COLCON_CURRENT_PREFIX\share/rover_localization/hook/pythonscriptspath.ps1"
 colcon_package_source_powershell_script "$env:COLCON_CURRENT_PREFIX\share/rover_localization/local_setup.ps1"
 
