@@ -15,6 +15,7 @@ using std::placeholders::_1;
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2_ros/transform_broadcaster.h>
+#include <limits>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +54,7 @@ using std::placeholders::_1;
 class SimpleController : public rclcpp::Node
 {
     private:
-        rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_;
+        rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_sub_;
         rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         
@@ -125,10 +126,10 @@ public:
                                     , y_(0.0)
                                     , theta_(0.0)
     {
+        cmd_vel_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>("/rover_controller/cmd_vel", 1, std::bind(&SimpleController::cmd_velCallback, this, _1));
+        joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback, this, _1));
         wheel_cmd_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>("/wheel_controller/commands", 1);
         servo_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/servo_controller/joint_trajectory", 1);
-        vel_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>("/rover_controller/cmd_vel", 1, std::bind(&SimpleController::velCallback, this, _1));
-        joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback, this, _1));
         odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/rover_controller/odom", 10);
         imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
             "imu/out", 1, std::bind(&SimpleController::imuCallback, this, std::placeholders::_1));
@@ -156,7 +157,7 @@ public:
     //This callback function converts the velocity command to wheel speeds
     //and publishes to the wheel controller
     //the wheel controller is a separate node that takes care of the low level control of the wheels
-    void velCallback(const geometry_msgs::msg::TwistStamped &msg_twist)
+    void cmd_velCallback(const geometry_msgs::msg::TwistStamped &msg_twist)
     {
         if((pri_velocity.linear.x == msg_twist.twist.linear.x) && (pri_velocity.angular.z == msg_twist.twist.angular.z)) return;
 
@@ -185,13 +186,13 @@ public:
             else if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x != 0)) // rotation
             {
                 // 1. Calculate turning radius
-                double r = twist_to_turning_radius(msg_twist);
+                double r_desired = twist_to_turning_radius(msg_twist);
 
                 // 2. Calculate servo motor angle
-                calculate_servo_angle(r);
+                calculate_servo_angle(r_desired);
 
                 // 3. Calculate wheel angular velocity
-                calculate_drive_velocity(msg_twist.twist.linear.x, r);
+                calculate_drive_velocity(msg_twist.twist.linear.x, r_desired);
 
                 // 4. publish
                 publishAngles();
@@ -222,25 +223,46 @@ public:
 
         if(r > 0)
         {
-            servo_cmd.angle_fl = theta_front_closest;
-            servo_cmd.angle_fr = theta_front_closest;
-            servo_cmd.angle_rl = -theta_front_closest;
-            servo_cmd.angle_rr = -theta_front_closest;
+            servo_cmd.angle_fl = -theta_front_closest;
+            servo_cmd.angle_fr = -theta_front_farthest;
+            servo_cmd.angle_rl = theta_front_closest;
+            servo_cmd.angle_rr = theta_front_farthest;
         }
         else
         {
-            servo_cmd.angle_fl = -theta_front_closest;
-            servo_cmd.angle_fr = -theta_front_closest;
-            servo_cmd.angle_rl = theta_front_closest;
-            servo_cmd.angle_rr = theta_front_closest;
+            servo_cmd.angle_fl = theta_front_farthest;
+            servo_cmd.angle_fr = theta_front_closest;
+            servo_cmd.angle_rl = -theta_front_farthest;
+            servo_cmd.angle_rr = -theta_front_closest;
         }
 
     }
 
     void calculate_drive_velocity(float velocity, double r)
     {
+        if (velocity == 0) {
+            wheel_cmd.vel_fl = 0.0;
+            wheel_cmd.vel_rl = 0.0;
+
+            wheel_cmd.vel_ml = 0.0;
+            wheel_cmd.vel_fr = 0.0;
+
+            wheel_cmd.vel_rr = 0.0;
+            wheel_cmd.vel_mr = 0.0;
+            return;
+        }
         angular_velocity_center = velocity / abs(r);
 
+        if (abs(r) > r_MAX) {
+            wheel_cmd.vel_fl = float(angular_velocity_center);
+            wheel_cmd.vel_rl = float(angular_velocity_center);
+
+            wheel_cmd.vel_ml = float(angular_velocity_center);
+            wheel_cmd.vel_fr = float(angular_velocity_center);
+
+            wheel_cmd.vel_rr = float(angular_velocity_center);
+            wheel_cmd.vel_mr = float(angular_velocity_center);
+        }
         vel_middle_closest = (abs(r) - d4) * angular_velocity_center;
         vel_corner_closest = hypot(abs(r) - d1, d3) * angular_velocity_center;
         vel_corner_farthest = hypot(abs(r) + d1, d3) * angular_velocity_center;
@@ -308,7 +330,13 @@ public:
 
     double twist_to_turning_radius(const geometry_msgs::msg::TwistStamped &msg)
     {
-        return msg.twist.linear.x / msg.twist.angular.z;
+        double infinity = std::numeric_limits<double>::infinity();
+        if (msg.twist.angular.z == 0) {
+            
+            return infinity; // No turning radius if angular velocity is zero
+        }
+        double turning_radius = msg.twist.linear.x / msg.twist.angular.z;
+        return turning_radius;
     }
 
     void rotate_in_place(const geometry_msgs::msg::TwistStamped &msg)
