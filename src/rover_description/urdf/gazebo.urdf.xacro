@@ -21,6 +21,26 @@
         </xacro:unless>
     </xacro:if>
 
+    <joint name="front_wheel_joint_left">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="front_wheel_joint_right">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    
     <joint name="middle_wheel_joint_left">
       <command_interface name="velocity">
         <param name="min">-10</param>
@@ -28,7 +48,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
-
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="middle_wheel_joint_right">
@@ -61,41 +81,6 @@
       <state_interface name="effort"/>
     </joint>
 
-    <joint name="front_wheel_joint_left">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-
-    <joint name="front_wheel_joint_right">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-
-
-    <joint name="front_wheel_joint_R">
-      <command_interface name="position">
-        <param name="min">-5</param>
-        <param name="max">5</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-0.1</param>
-        <param name="max">0.1</param>
-      </command_interface>
-
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
 
     <joint name="front_wheel_joint_L">
       <command_interface name="position">
@@ -110,7 +95,8 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="rear_wheel_joint_R">
+
+    <joint name="front_wheel_joint_R">
       <command_interface name="position">
         <param name="min">-5</param>
         <param name="max">5</param>
@@ -123,7 +109,22 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+
     <joint name="rear_wheel_joint_L">
+      <command_interface name="position">
+        <param name="min">-5</param>
+        <param name="max">5</param>
+      </command_interface>
+      <command_interface name="velocity">
+        <param name="min">-0.1</param>
+        <param name="max">0.1</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="rear_wheel_joint_R">
       <command_interface name="position">
         <param name="min">-5</param>
         <param name="max">5</param>

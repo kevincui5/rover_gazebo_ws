@@ -16,6 +16,7 @@ using std::placeholders::_1;
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <limits>
+#include <unordered_map>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -353,11 +354,11 @@ public:
 
     void publishVelocity() {
 
-        std_msgs::msg::Float64MultiArray wheel;
+        std_msgs::msg::Float64MultiArray wheel_msg;
 
-        wheel.data = {wheel_cmd.vel_ml, wheel_cmd.vel_mr, wheel_cmd.vel_fl, wheel_cmd.vel_fr, wheel_cmd.vel_rl, wheel_cmd.vel_rr};
+        wheel_msg.data = {wheel_cmd.vel_ml, wheel_cmd.vel_mr, wheel_cmd.vel_fl, wheel_cmd.vel_fr, wheel_cmd.vel_rl, wheel_cmd.vel_rr};
 
-        wheel_cmd_pub_->publish(wheel);
+        wheel_cmd_pub_->publish(wheel_msg);
     }
 
     void publishAngles()
@@ -378,13 +379,29 @@ public:
 
     void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg_state)
     {
-
-        fl_vel = msg_state->position[5];
-        fr_vel = msg_state->position[7];
-        ml_vel = msg_state->position[2];
-        mr_vel = msg_state->position[3];
-        rl_vel = msg_state->position[8];
-        rr_vel = msg_state->position[9];
+        std::unordered_map<std::string, double> joint_states = {};
+        for (size_t i = 0; i < msg_state->name.size(); ++i) {
+            joint_states[msg_state->name[i]] = msg_state->position[i];
+        }
+        fl_vel = joint_states["front_wheel_joint_left"];
+        fr_vel = joint_states["front_wheel_joint_right"];
+        ml_vel = joint_states["middle_wheel_joint_left"];
+        mr_vel = joint_states["middle_wheel_joint_right"];
+        rl_vel = joint_states["rear_wheel_joint_left"];
+        rr_vel = joint_states["rear_wheel_joint_right"];
+        // fl_vel = msg_state->position[5];
+        // fr_vel = msg_state->position[7];
+        // ml_vel = msg_state->position[2];
+        // mr_vel = msg_state->position[3];
+        // rl_vel = msg_state->position[8];
+        // rr_vel = msg_state->position[9];
+        // RCLCPP_INFO(this->get_logger(), "jointstate name 0: %s, jointstate name 1: %s,jointstate name 2: %s,jointstate name 3: %s,jointstate name 4: %s,jointstate name 5: %s,jointstate name 6: %s,jointstate name 7: %s,jointstate name 8: %s,jointstate name 9: %s", msg_state->name[0], msg_state->name[1], msg_state->name[2], msg_state->name[3], msg_state->name[4], msg_state->position[5], msg_state->name[6], msg_state->name[7], msg_state->name[8], msg_state->name[9]);
+        // fl_vel = msg_state->position[2];
+        // fr_vel = msg_state->position[3];
+        // ml_vel = msg_state->position[4];
+        // mr_vel = msg_state->position[5];
+        // rl_vel = msg_state->position[8];
+        // rr_vel = msg_state->position[9];
 
         Odometry(theta);
     }
