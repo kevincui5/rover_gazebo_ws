@@ -1,6 +1,3 @@
-
-
-
 #include <Eigen/Geometry>
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -28,11 +25,10 @@ using std::placeholders::_1;
 
 #include "sensor_msgs/msg/imu.hpp"
 
-// #include "sensor_msgs/msg/joint_state.hpp"
-// #include "nav_msgs/msg/odometry.hpp"
+
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-#include "tf2/LinearMath/Quaternion.h"
+// #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_listener.h"
 // #include "tf2_ros/transform_broadcaster.h"
 
@@ -52,12 +48,15 @@ using std::placeholders::_1;
 #define d3 0.274 
 #define d4 0.253 
 
+#define NO_CMD_THRESHOLD 0.0 // threshold for no command in radians
+#define DRIVE_NO_LOAD_RPM 223.0 //no load speed for the drive motors. NOTE: needs to be a float value
+
 class SimpleController : public rclcpp::Node
 {
     private:
         rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_sub_;
         rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
         
 
         // Odometry
@@ -75,7 +74,7 @@ class SimpleController : public rclcpp::Node
         
 
         rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_;
-        rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr servo_pub_;
+        rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr servo_cmd_pub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
         std::unique_ptr<tf2_ros::TransformBroadcaster> transform_broadcaster_;
@@ -86,8 +85,8 @@ class SimpleController : public rclcpp::Node
         // double theta_front_closest;
         // double theta_front_farthest;
 
-        double angular_velocity_center, vel_middle_closest, vel_corner_closest, vel_corner_farthest, vel_middle_farthest;
-        double ang_vel_middle_closest, ang_vel_corner_closest, ang_vel_corner_farthest, ang_vel_middle_farthest;
+        // double angular_velocity_center, vel_middle_closest, vel_corner_closest, vel_corner_farthest, vel_middle_farthest;
+        // double ang_vel_middle_closest, ang_vel_corner_closest, ang_vel_corner_farthest, ang_vel_middle_farthest;
         double start_time, time, pre_time;
 
         geometry_msgs::msg::Twist pri_velocity;
@@ -130,9 +129,9 @@ public:
         cmd_vel_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>("/rover_controller/cmd_vel", 1, std::bind(&SimpleController::cmd_velCallback, this, _1));
         joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback, this, _1));
         wheel_cmd_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>("/wheel_controller/commands", 1);
-        servo_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/servo_controller/joint_trajectory", 1);
+        servo_cmd_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/servo_controller/joint_trajectory", 1);
         odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/rover_controller/odom", 10);
-        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+        imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
             "imu/out", 1, std::bind(&SimpleController::imuCallback, this, std::placeholders::_1));
 
         transform_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -180,7 +179,7 @@ public:
                 servo_cmd.angle_rr = -atan(d2/d1);
 
                 rotate_in_place(msg_twist);
-                publishAngles();                // servo angle pub
+                publishAngles();   
                 publishVelocity();
             }
 
@@ -193,7 +192,7 @@ public:
                 calculate_servo_angle(r_desired);
 
                 // 3. Calculate wheel angular velocity
-                calculate_drive_velocity(msg_twist.twist.linear.x, r_desired);
+                calculate_wheel_velocity(msg_twist.twist.linear.x, r_desired);
 
                 // 4. publish
                 publishAngles();
@@ -219,27 +218,29 @@ public:
     */
     void calculate_servo_angle(double r)
     {
-        double theta_front_closest = atan2(d3, abs(r) - d1);
-        double theta_front_farthest = atan2(d3, abs(r) + d1);
+        double theta_fl = atan2(d3, abs(r) - d1);
+        double theta_fr = atan2(d3, abs(r) + d1);
+        double theta_rl = atan2(d2, abs(r) - d1);
+        double theta_rr = atan2(d2, abs(r) + d1);
 
         if(r > 0)
         {
-            servo_cmd.angle_fl = -theta_front_closest;
-            servo_cmd.angle_fr = -theta_front_farthest;
-            servo_cmd.angle_rl = theta_front_closest;
-            servo_cmd.angle_rr = theta_front_farthest;
+            servo_cmd.angle_fl = -theta_fl;
+            servo_cmd.angle_fr = -theta_fr;
+            servo_cmd.angle_rl = theta_rl;
+            servo_cmd.angle_rr = theta_rr;
         }
         else
         {
-            servo_cmd.angle_fl = theta_front_farthest;
-            servo_cmd.angle_fr = theta_front_closest;
-            servo_cmd.angle_rl = -theta_front_farthest;
-            servo_cmd.angle_rr = -theta_front_closest;
+            servo_cmd.angle_fl = theta_fr;
+            servo_cmd.angle_fr = theta_fl;
+            servo_cmd.angle_rl = -theta_rr;
+            servo_cmd.angle_rr = -theta_rl;
         }
 
     }
 
-    void calculate_drive_velocity(float velocity, double r)
+    void calculate_wheel_velocity(float velocity, double r)
     {
         if (velocity == 0) {
             wheel_cmd.vel_fl = 0.0;
@@ -252,7 +253,7 @@ public:
             wheel_cmd.vel_mr = 0.0;
             return;
         }
-        angular_velocity_center = velocity / abs(r);
+        double angular_velocity_center = velocity / abs(r);
 
         if (abs(r) > r_MAX) {
             wheel_cmd.vel_fl = float(angular_velocity_center);
@@ -264,38 +265,40 @@ public:
             wheel_cmd.vel_rr = float(angular_velocity_center);
             wheel_cmd.vel_mr = float(angular_velocity_center);
         }
-        vel_middle_closest = (abs(r) - d4) * angular_velocity_center;
-        vel_corner_closest = hypot(abs(r) - d1, d3) * angular_velocity_center;
-        vel_corner_farthest = hypot(abs(r) + d1, d3) * angular_velocity_center;
-        vel_middle_farthest = (abs(r) + d4) * angular_velocity_center;
+        else {
+            double vel_fl = hypot(abs(r) - d1, d3) * angular_velocity_center;
+            double vel_fr = hypot(abs(r) + d1, d3) * angular_velocity_center;
+            double vel_ml = (abs(r) - d4) * angular_velocity_center;
+            double vel_mr = (abs(r) + d4) * angular_velocity_center;
+            double vel_rl = hypot(abs(r) - d1, d2) * angular_velocity_center;
+            double vel_rr = hypot(abs(r) + d1, d2) * angular_velocity_center;
 
-        ang_vel_middle_closest = vel_middle_closest / WHEEL_RADIUS;
-        ang_vel_corner_closest = vel_corner_closest / WHEEL_RADIUS;
-        ang_vel_corner_farthest = vel_corner_farthest / WHEEL_RADIUS;
-        ang_vel_middle_farthest = vel_middle_farthest / WHEEL_RADIUS;
+            double ang_vel_fl = vel_fl / WHEEL_RADIUS;
+            double ang_vel_fr = vel_fr / WHEEL_RADIUS;
+            double ang_vel_ml = vel_ml / WHEEL_RADIUS;
+            double ang_vel_mr = vel_mr / WHEEL_RADIUS;
+            double ang_vel_rl = vel_rl/ WHEEL_RADIUS;
+            double ang_vel_rr = vel_rr / WHEEL_RADIUS;
 
-        if (r > 0)  // turning left
-        {
-            wheel_cmd.vel_fl = float(ang_vel_corner_closest);
-            wheel_cmd.vel_rl = float(ang_vel_corner_closest);
+            if (r > 0)  // turning left
+            {
+                wheel_cmd.vel_fl = float(ang_vel_fl);
+                wheel_cmd.vel_fr = float(ang_vel_fr);
+                wheel_cmd.vel_ml = float(ang_vel_ml);
+                wheel_cmd.vel_mr = float(ang_vel_mr);
+                wheel_cmd.vel_rl = float(ang_vel_rl);
+                wheel_cmd.vel_rr = float(ang_vel_rr);
+            }
+            else        // turning right
+            {
+                wheel_cmd.vel_fl = float(ang_vel_fr);
+                wheel_cmd.vel_fr = float(ang_vel_fl);
+                wheel_cmd.vel_mr = float(ang_vel_ml);
+                wheel_cmd.vel_ml = float(ang_vel_mr);
+                wheel_cmd.vel_rl = float(ang_vel_rr);
+                wheel_cmd.vel_rr = float(ang_vel_rl);
 
-            wheel_cmd.vel_ml = float(ang_vel_middle_closest);
-            wheel_cmd.vel_fr = float(ang_vel_corner_farthest);
-
-            wheel_cmd.vel_rr = float(ang_vel_corner_farthest);
-            wheel_cmd.vel_mr = float(ang_vel_middle_farthest);
-        }
-        else        // turning right
-        {
-            wheel_cmd.vel_fl = float(ang_vel_corner_farthest);
-            wheel_cmd.vel_rl = float(ang_vel_corner_farthest);
-
-            wheel_cmd.vel_ml = float(ang_vel_middle_farthest);
-            wheel_cmd.vel_fr = float(ang_vel_corner_closest);
-
-            wheel_cmd.vel_rr = float(ang_vel_corner_closest);
-            wheel_cmd.vel_mr = float(ang_vel_middle_closest);
-
+            }
         }
 
     }
@@ -315,13 +318,13 @@ public:
     }
 
     void go_straight(const geometry_msgs::msg::TwistStamped &msg) {
-        double velocity_data = msg.twist.linear.x / WHEEL_RADIUS;
-        wheel_cmd.vel_fl = velocity_data;
-        wheel_cmd.vel_fr = velocity_data;
-        wheel_cmd.vel_ml = velocity_data;
-        wheel_cmd.vel_mr = velocity_data;
-        wheel_cmd.vel_rl = velocity_data;
-        wheel_cmd.vel_rr = velocity_data;
+        double linear_vel = msg.twist.linear.x / WHEEL_RADIUS;
+        wheel_cmd.vel_fl = linear_vel;
+        wheel_cmd.vel_fr = linear_vel;
+        wheel_cmd.vel_ml = linear_vel;
+        wheel_cmd.vel_mr = linear_vel;
+        wheel_cmd.vel_rl = linear_vel;
+        wheel_cmd.vel_rr = linear_vel;
         servo_cmd.angle_fl = 0;
         servo_cmd.angle_fr = 0;
         servo_cmd.angle_rl = 0;
@@ -355,9 +358,7 @@ public:
     void publishVelocity() {
 
         std_msgs::msg::Float64MultiArray wheel_msg;
-
         wheel_msg.data = {wheel_cmd.vel_ml, wheel_cmd.vel_mr, wheel_cmd.vel_fl, wheel_cmd.vel_fr, wheel_cmd.vel_rl, wheel_cmd.vel_rr};
-
         wheel_cmd_pub_->publish(wheel_msg);
     }
 
@@ -374,7 +375,7 @@ public:
         point.time_from_start = rclcpp::Duration::from_seconds(0.2);
 
         servo.points.push_back(point);
-        servo_pub_->publish(servo);
+        servo_cmd_pub_->publish(servo);
     }
 
     void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg_state)
@@ -389,25 +390,35 @@ public:
         mr_vel = joint_states["middle_wheel_joint_right"];
         rl_vel = joint_states["rear_wheel_joint_left"];
         rr_vel = joint_states["rear_wheel_joint_right"];
-        // fl_vel = msg_state->position[5];
-        // fr_vel = msg_state->position[7];
-        // ml_vel = msg_state->position[2];
-        // mr_vel = msg_state->position[3];
-        // rl_vel = msg_state->position[8];
-        // rr_vel = msg_state->position[9];
-        // RCLCPP_INFO(this->get_logger(), "jointstate name 0: %s, jointstate name 1: %s,jointstate name 2: %s,jointstate name 3: %s,jointstate name 4: %s,jointstate name 5: %s,jointstate name 6: %s,jointstate name 7: %s,jointstate name 8: %s,jointstate name 9: %s", msg_state->name[0], msg_state->name[1], msg_state->name[2], msg_state->name[3], msg_state->name[4], msg_state->position[5], msg_state->name[6], msg_state->name[7], msg_state->name[8], msg_state->name[9]);
-        // fl_vel = msg_state->position[2];
-        // fr_vel = msg_state->position[3];
-        // ml_vel = msg_state->position[4];
-        // mr_vel = msg_state->position[5];
-        // rl_vel = msg_state->position[8];
-        // rr_vel = msg_state->position[9];
+
+        Odometry(theta);
+    }
+
+    void jointStateCallback2(const sensor_msgs::msg::JointState::SharedPtr msg_state)
+    {
+        std::unordered_map<std::string, double> joints_pos = {};
+        for (size_t i = 0; i < msg_state->name.size(); ++i) {
+            joints_pos[msg_state->name[i]] = msg_state->position[i];
+        }
+        std::unordered_map<std::string, double> joints_vel = {};
+        for (size_t i = 0; i < msg_state->name.size(); ++i) {
+            joints_vel[msg_state->name[i]] = msg_state->velocity[i];
+        }
+        fl_vel = joints_vel["front_wheel_joint_left"];
+        fr_vel = joints_vel["front_wheel_joint_right"];
+        ml_vel = joints_vel["middle_wheel_joint_left"];
+        mr_vel = joints_vel["middle_wheel_joint_right"];
+        rl_vel = joints_vel["rear_wheel_joint_left"];
+        rr_vel = joints_vel["rear_wheel_joint_right"];
 
         Odometry(theta);
     }
 
     void Odometry(double angle)
     {
+        //cheated a little by getting theta(angle) from the IMU instead of calculating it from turning radius and servo angles
+
+
         current_dl = (fl_vel + fr_vel + ml_vel + mr_vel + rl_vel + rr_vel) * WHEEL_RADIUS / 6;
         dl = current_dl - pre_dl;
 
@@ -447,7 +458,7 @@ public:
 
         odom_pub_->publish(odom_msg);
 
-       // printf("x_pos : %f\ty_pos : %f\n", x_postion,y_postion);
+    //    printf("x_pos : %f\ty_pos : %f\n", x_postion,y_postion);
     }
 
     void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
