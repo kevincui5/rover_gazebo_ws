@@ -1,17 +1,19 @@
 #include <Eigen/Geometry>
-#include <tf2/LinearMath/Quaternion.h>
+#include <Eigen/Core>
 
 
 using std::placeholders::_1;
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
-#include <Eigen/Core>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include "geometry_msgs/msg/twist_with_covariance.hpp"
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+
 #include <limits>
 #include <unordered_map>
 
@@ -115,7 +117,10 @@ class SimpleController : public rclcpp::Node
         // double FR_servo_data, FL_servo_data, RR_servo_data, RL_servo_data;
 
         bool delay_ = true;
-        nav_msgs::msg::Odometry odom_msg;
+        nav_msgs::msg::Odometry odom_msg_;
+        std::unordered_map<std::string, double> joints_pos_ = {};
+        std::unordered_map<std::string, double> joints_vel_ = {};
+        geometry_msgs::msg::TwistWithCovariance curr_twist_ = geometry_msgs::msg::TwistWithCovariance();
 
 public:
     SimpleController(const std::string& name)
@@ -135,6 +140,10 @@ public:
             "imu/out", 1, std::bind(&SimpleController::imuCallback, this, std::placeholders::_1));
 
         transform_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+        odom_msg_.header.stamp = this->get_clock()->now();
+        odom_msg_.header.frame_id = "odom";
+        odom_msg_.child_frame_id = "base_footprint";
+        odom_msg_.pose.pose.orientation.w = 1;
         // transform_stamped_.header.frame_id = "odom";
         // transform_stamped_.child_frame_id = "base_footprint";
         // ServoCommand servo_cmd;
@@ -343,6 +352,23 @@ public:
         return turning_radius;
     }
 
+    double angle_to_turning_radius(double angle, bool is_front)
+    {
+        /*
+        Convert the angle of a virtual wheel positioned in the middle of the front two wheels to a turning radius
+        Turning left and positive angle corresponds to a positive turning radius
+
+        :param angle: [-pi/4, pi/4]
+        :return: turning radius for the given angle in [m]
+        */
+        if (tan(angle) == 0) {
+            return std::numeric_limits<double>::infinity(); // No turning radius if angle is zero
+        }
+        double distance = is_front ? d3 : d2;
+        double turning_radius = distance / angle;
+        return turning_radius;
+    }
+    
     void rotate_in_place(const geometry_msgs::msg::TwistStamped &msg)
     {
         wheel_cmd.vel_fl = -float(sqrt(d1*d1+d3*d3) * msg.twist.angular.z / WHEEL_RADIUS);
@@ -396,22 +422,91 @@ public:
 
     void jointStateCallback2(const sensor_msgs::msg::JointState::SharedPtr msg_state)
     {
-        std::unordered_map<std::string, double> joints_pos = {};
         for (size_t i = 0; i < msg_state->name.size(); ++i) {
-            joints_pos[msg_state->name[i]] = msg_state->position[i];
+            joints_pos_[msg_state->name[i]] = msg_state->position[i];
         }
-        std::unordered_map<std::string, double> joints_vel = {};
         for (size_t i = 0; i < msg_state->name.size(); ++i) {
-            joints_vel[msg_state->name[i]] = msg_state->velocity[i];
+            joints_vel_[msg_state->name[i]] = msg_state->velocity[i];
         }
-        fl_vel = joints_vel["front_wheel_joint_left"];
-        fr_vel = joints_vel["front_wheel_joint_right"];
-        ml_vel = joints_vel["middle_wheel_joint_left"];
-        mr_vel = joints_vel["middle_wheel_joint_right"];
-        rl_vel = joints_vel["rear_wheel_joint_left"];
-        rr_vel = joints_vel["rear_wheel_joint_right"];
 
-        Odometry(theta);
+        Odometry2(&joints_pos_, &joints_vel_);
+    }
+
+    void Odometry2(std::unordered_map<std::string, double> *joints_pos,
+                   std::unordered_map<std::string, double> *joints_vel)
+    {
+        //using code from rover.py
+        int32_t t_curr = this->now().nanoseconds();
+        int32_t t_prev = odom_msg_.header.stamp.sec * 1e9 + odom_msg_.header.stamp.nanosec;
+        float dt = (t_curr - t_prev) / 1e9;
+        forward_kinematics(joints_pos, joints_vel);
+        double dx = curr_twist_.twist.linear.x * dt;
+        double dtheta = curr_twist_.twist.angular.z * dt;
+        double current_angle = 2 * atan2(odom_msg_.pose.pose.orientation.z, odom_msg_.pose.pose.orientation.w);
+        double new_angle = current_angle + dtheta;
+        odom_msg_.pose.pose.orientation.z = sin(new_angle / 2);
+        odom_msg_.pose.pose.orientation.w = cos(new_angle / 2);
+        odom_msg_.pose.pose.position.x += dx * cos(new_angle);
+        odom_msg_.pose.pose.position.y += dx * sin(new_angle);
+        std::array<double, 36> covariance_matrix = {0.0};
+        odom_msg_.pose.covariance = covariance_matrix;
+        odom_msg_.twist = curr_twist_;
+        odom_msg_.twist.covariance = covariance_matrix;
+        odom_msg_.header.stamp = this->get_clock()->now();
+
+
+        static tf2_ros::TransformBroadcaster transform_broadcaster(this);
+        geometry_msgs::msg::TransformStamped transform_stamped;
+
+        transform_stamped.header.stamp = this->get_clock()->now();
+        transform_stamped.header.frame_id = "odom";
+        transform_stamped.child_frame_id = "base_footprint";
+
+        transform_stamped.transform.translation.x = odom_msg_.pose.pose.position.x;
+        transform_stamped.transform.translation.y = odom_msg_.pose.pose.position.y;
+
+        transform_stamped.transform.rotation = odom_msg_.pose.pose.orientation;
+        transform_broadcaster.sendTransform(transform_stamped);
+
+        odom_pub_->publish(odom_msg_);
+
+    //    printf("x_pos : %f\ty_pos : %f\n", x_postion,y_postion);
+    }
+
+    void forward_kinematics(std::unordered_map<std::string, double> *joints_pos,
+        std::unordered_map<std::string, double> *joints_vel)
+    {
+        double r_fl, r_fr, r_ml, r_mr, r_rl, r_rr;
+        double vel_ml = joints_vel->at("middle_wheel_joint_left");
+        double vel_mr = joints_vel->at("middle_wheel_joint_right");
+        double ang_fl = joints_pos->at("front_wheel_joint_L");
+        double ang_fr = joints_pos->at("front_wheel_joint_R");  
+        double ang_rl = joints_pos->at("rear_wheel_joint_L");
+        double ang_rr = joints_pos->at("rear_wheel_joint_R");
+
+        if (ang_fl + ang_fr + ang_rl + ang_rr > 0) {    //turning left
+            r_fl = d1 + angle_to_turning_radius(ang_fl, true);
+            r_fr = -d1 + angle_to_turning_radius(ang_fr, true);
+            r_rl = -d1 - angle_to_turning_radius(ang_rl, false);
+            r_rr = d1 - angle_to_turning_radius(ang_rr, false);
+        }
+        else  { //turning right
+            r_fr = d1 + angle_to_turning_radius(ang_fl, true);
+            r_fl = -d1 + angle_to_turning_radius(ang_fr, true);
+            r_rr = -d1 - angle_to_turning_radius(ang_rl, false);
+            r_rl = d1 - angle_to_turning_radius(ang_rr, false);
+        }
+        std::vector<double> r_list = {r_fl, r_fr, r_ml, r_mr, r_rl, r_rr};
+        std::sort(r_list.begin(), r_list.end());
+        double r = (r_list[1] + r_list[2]) / 2.0;
+        double angular_velocity_center = (vel_ml + vel_mr) / 2;
+        curr_twist_.twist.linear.x = WHEEL_RADIUS * angular_velocity_center;
+        if (r == 0) {
+            curr_twist_.twist.linear.x = 0;
+            curr_twist_.twist.angular.z = angular_velocity_center * WHEEL_RADIUS / d4;
+        }
+        curr_twist_.twist.angular.z = curr_twist_.twist.linear.x / r;
+
     }
 
     void Odometry(double angle)
@@ -428,19 +523,19 @@ public:
         y_postion += dl * sin(angle);
         // RCLCPP_INFO(this->get_logger(), "x_position: %f, y_position: %f", x_postion, y_postion);
         // RCLCPP_INFO(this->get_logger(), "****angle: %f", angle);
-        odom_msg.header.stamp = this->get_clock()->now();
-        odom_msg.header.frame_id = "odom";
+        odom_msg_.header.stamp = this->get_clock()->now();
+        odom_msg_.header.frame_id = "odom";
 
-        odom_msg.pose.pose.position.x = x_postion;
-        odom_msg.pose.pose.position.y = y_postion;
+        odom_msg_.pose.pose.position.x = x_postion;
+        odom_msg_.pose.pose.position.y = y_postion;
 
         tf2::Quaternion quaternion;
         quaternion.setRPY(0, 0, angle);
 
-        odom_msg.pose.pose.orientation.x = quaternion.x();
-        odom_msg.pose.pose.orientation.y = quaternion.y();
-        odom_msg.pose.pose.orientation.z = quaternion.z();
-        odom_msg.pose.pose.orientation.w = quaternion.w();
+        odom_msg_.pose.pose.orientation.x = quaternion.x();
+        odom_msg_.pose.pose.orientation.y = quaternion.y();
+        odom_msg_.pose.pose.orientation.z = quaternion.z();
+        odom_msg_.pose.pose.orientation.w = quaternion.w();
 
         static tf2_ros::TransformBroadcaster transform_broadcaster(this);
         geometry_msgs::msg::TransformStamped transform_stamped;
@@ -453,10 +548,10 @@ public:
         transform_stamped.transform.translation.y = y_postion;
         transform_stamped.transform.translation.z = 0.0;
 
-        transform_stamped.transform.rotation = odom_msg.pose.pose.orientation;
+        transform_stamped.transform.rotation = odom_msg_.pose.pose.orientation;
         transform_broadcaster.sendTransform(transform_stamped);
 
-        odom_pub_->publish(odom_msg);
+        odom_pub_->publish(odom_msg_);
 
     //    printf("x_pos : %f\ty_pos : %f\n", x_postion,y_postion);
     }
