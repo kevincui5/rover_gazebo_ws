@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/dijkstra_planner.dir/src/dijkstra_planner.cpp.o"
   "CMakeFiles/dijkstra_planner.dir/src/dijkstra_planner.cpp.o.d"
-  "dijkstra_planner"
-  "dijkstra_planner.pdb"
+  "libdijkstra_planner.pdb"
+  "libdijkstra_planner.so"
 )
 
 # Per-language clean rules from dependency scanning.

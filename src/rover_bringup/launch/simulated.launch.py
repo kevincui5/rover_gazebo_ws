@@ -64,6 +64,14 @@ def generate_launch_description():
         condition=IfCondition(use_slam)
     )
 
+    navigation = IncludeLaunchDescription(
+        os.path.join(
+            get_package_share_directory("rover_navigation"),
+            "launch",
+            "navigation.launch.py"
+        ),
+    )
+
     rviz_localization = Node(
         package="rviz2",
         executable="rviz2",
@@ -99,6 +107,7 @@ def generate_launch_description():
         joystick,
         localization,
         slam,
+        navigation,
         rviz_localization,
         rviz_slam
     ])
