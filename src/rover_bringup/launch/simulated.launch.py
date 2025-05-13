@@ -107,7 +107,7 @@ def generate_launch_description():
         joystick,
         localization,
         slam,
-        navigation,
+        # navigation,
         rviz_localization,
         rviz_slam
     ])
