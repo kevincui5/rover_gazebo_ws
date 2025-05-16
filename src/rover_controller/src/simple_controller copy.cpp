@@ -18,6 +18,7 @@ using std::placeholders::_1;
 #include <unordered_map>
 
 
+////////////////////////////////////////////////////////////////////////////////////////
 #include <chrono>
 #include <memory>
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
@@ -29,8 +30,10 @@ using std::placeholders::_1;
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+// #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_listener.h"
-#include <cmath>  // for std::hypot
+// #include "tf2_ros/transform_broadcaster.h"
+
 /* r -- turning radius.  A small value means a sharp turn, a large value means a wide turn. Any radius larger than max_radius will be considered a straight line because of servo motor encoder's resolution.
     WHEEL_RADIUS -- wheel radius
    d1 -- distance from the center to the front wheel along the x-axis 
@@ -51,20 +54,6 @@ using std::placeholders::_1;
 // #define NO_CMD_THRESHOLD 0.0 // threshold for no command in radians
 #define DRIVE_NO_LOAD_RPM 223.0 //no load speed for the drive motors. NOTE: needs to be a float value
 
-typedef struct WheelServoCommand {
-    double vel_fl;
-    double vel_fr;
-    double vel_ml;
-    double vel_mr;
-    double vel_rl;
-    double vel_rr;
-    double angle_fl;
-    double angle_fr;
-    double angle_rl;
-    double angle_rr;
-} WheelServoCommand_;
-
-
 class SimpleController : public rclcpp::Node
 {
     private:
@@ -72,7 +61,21 @@ class SimpleController : public rclcpp::Node
         rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
         
-        double vel_max_;
+
+        // Odometry
+        // double wheel_radius_;
+        // double wheel_separation_;
+        // Eigen::Matrix2d speed_conversion_;
+        // double right_wheel_prev_pos_;
+        // double left_wheel_prev_pos_;
+        // double x_;
+        // double y_;
+        // double theta_;
+
+        rclcpp::Time prev_time_;
+
+        // TF
+        
 
         rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_;
         rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr servo_cmd_pub_;
@@ -81,14 +84,41 @@ class SimpleController : public rclcpp::Node
         std::unique_ptr<tf2_ros::TransformBroadcaster> transform_broadcaster_;
 
         double theta = 0;
+        // double l = 0; // linear, angular turning radius
 
+        // double theta_front_closest;
+        // double theta_front_farthest;
+
+        // double angular_velocity_center, vel_middle_closest, vel_corner_closest, vel_corner_farthest, vel_middle_farthest;
+        // double ang_vel_middle_closest, ang_vel_corner_closest, ang_vel_corner_farthest, ang_vel_middle_farthest;
         double start_time, time, pre_time;
+
+        geometry_msgs::msg::Twist pri_velocity;
+
 
         double fl_vel, fr_vel, ml_vel, mr_vel, rl_vel, rr_vel;
         double current_dl, dl, pre_dl;
+        double x_postion, y_postion;
 
+        // double FL_data, FR_data, ML_data, MR_data, RL_data, RR_data;
+        struct WheelCommand {
+            double vel_fl;
+            double vel_fr;
+            double vel_ml;
+            double vel_mr;
+            double vel_rl;
+            double vel_rr;
+        } wheel_cmd;
 
+        struct ServoCommand {
+            double angle_fl;
+            double angle_fr;
+            double angle_rl;
+            double angle_rr;
+        } servo_cmd;
+        // double FR_servo_data, FL_servo_data, RR_servo_data, RL_servo_data;
 
+        bool delay_ = true;
         nav_msgs::msg::Odometry odom_msg_;
         std::unordered_map<std::string, double> joints_pos_ = {};
         std::unordered_map<std::string, double> joints_vel_ = {};
@@ -103,9 +133,8 @@ public:
                                     // , y_(0.0)
                                     // , theta_(0.0)
     {
-        vel_max_ = WHEEL_RADIUS * DRIVE_NO_LOAD_RPM * M_PI / 30.0; // max speed in m/s
         cmd_vel_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>("/rover_controller/cmd_vel", 1, std::bind(&SimpleController::cmd_velCallback, this, _1));
-        joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback2, this, _1));
+        joint_sub_ = create_subscription<sensor_msgs::msg::JointState>("/joint_states", 1, std::bind(&SimpleController::jointStateCallback, this, _1));
         wheel_cmd_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>("/wheel_controller/commands", 1);
         servo_cmd_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/servo_controller/joint_trajectory", 1);
         odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/rover_controller/odom", 10);
@@ -120,6 +149,18 @@ public:
         // transform_stamped_.header.frame_id = "odom";
         // transform_stamped_.child_frame_id = "base_footprint";
         // ServoCommand servo_cmd;
+        servo_cmd.angle_fl = 0; 
+        servo_cmd.angle_fr = 0;
+        servo_cmd.angle_rl = 0;
+        servo_cmd.angle_rr = 0;
+        wheel_cmd.vel_fl = 0;
+        wheel_cmd.vel_fr = 0;
+        wheel_cmd.vel_ml = 0;
+        wheel_cmd.vel_mr = 0;
+        wheel_cmd.vel_rl = 0;
+        wheel_cmd.vel_rr = 0;
+
+        prev_time_ = get_clock()->now();
     }
 
     //whenever a new velocity command (message) is received this callback function is called
@@ -127,39 +168,60 @@ public:
     //This callback function converts the velocity command to wheel speeds
     //and publishes to the wheel controller
     //the wheel controller is a separate node that takes care of the low level control of the wheels
-    void cmd_velCallback(const geometry_msgs::msg::TwistStamped &msg_twist, bool is_intuitive = false)
+    void cmd_velCallback(const geometry_msgs::msg::TwistStamped &msg_twist)
     {
-        // RCLCPP_INFO(this->get_logger(), "Received cmd_vel: linear.x: %f, angular.z: %f", msg_twist.twist.linear.x, msg_twist.twist.angular.z);
-        
-        // 1. Calculate the turning radius
-        // 2. Calculate the servo motor angle
-        // 3. Calculate the wheel angular velocity
-        // 4. publish
+        if((pri_velocity.linear.x == msg_twist.twist.linear.x) && (pri_velocity.angular.z == msg_twist.twist.angular.z)) return;
 
-        // WheelServoCommand_ command;
-        
-        // command = rotate_in_place(msg_twist);
-    
-        WheelServoCommand_ command;
-        if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x == 0))  // rotate in place
+        if(delay_)
         {
-            command = rotate_in_place(msg_twist);
-            publishCommand(command);   
+            delay_ = false;
+
+            if (msg_twist.twist.angular.z == 0 && msg_twist.twist.linear.x != 0) { // linear velocity
+                go_straight(msg_twist);
+                publishVelocity();
+                publishAngles();
+            }
+
+            else if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x == 0))  // rotate in place
+            {
+                servo_cmd.angle_fl = -atan(d3/d1);
+                servo_cmd.angle_fr = atan(d3/d1);
+                servo_cmd.angle_rl = atan(d2/d1);
+                servo_cmd.angle_rr = -atan(d2/d1);
+
+                rotate_in_place(msg_twist);
+                publishAngles();   
+                publishVelocity();
+            }
+
+            else if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x != 0)) // rotation
+            {
+                // 1. Calculate turning radius
+                double r_desired = twist_to_turning_radius(msg_twist);
+
+                // 2. Calculate servo motor angle
+                calculate_servo_angle(r_desired);
+
+                // 3. Calculate wheel angular velocity
+                calculate_wheel_velocity(msg_twist.twist.linear.x, r_desired);
+
+                // 4. publish
+                publishAngles();
+                publishVelocity();
+            }
+
+            else if((msg_twist.twist.angular.z == 0)&&(msg_twist.twist.linear.x == 0))
+            {
+                stop();
+                publishAngles();
+                publishVelocity();
+            }
+
+            delay_ = true;
         }
-        else 
-        {
-            // 1. Calculate turning radius
-            double r_desired = twist_to_turning_radius(msg_twist);
 
-            // 2. Calculate servo motor angle
-            calculate_servo_angle(r_desired);
-
-            // 3. Calculate wheel angular velocity
-            calculate_wheel_velocity(msg_twist.twist.linear.x, r_desired);
-
-            // 4. publish
-            publishCommand(command);
-        }
+        pri_velocity.linear.x = msg_twist.twist.linear.x;
+        pri_velocity.angular.z = msg_twist.twist.angular.z;
     }
 
     /* * Calculate the required angles of the 4 servo(corner) motors based on the turning radius
@@ -252,42 +314,43 @@ public:
 
     }
 
-    static double twist_to_turning_radius(const geometry_msgs::msg::TwistStamped &twist_msg, bool is_clipped = true, bool is_intuitive = false)
+    void stop()
     {
-        /*
-        Convert the linear and angular velocity to a turning radius
-        Turning left and positive angle corresponds to a positive turning radius
+        wheel_cmd.vel_fl = 0;
+        wheel_cmd.vel_fr = 0;
+        wheel_cmd.vel_ml = 0;
+        wheel_cmd.vel_mr = 0;
+        wheel_cmd.vel_rl = 0;
+        wheel_cmd.vel_rr = 0;
+        servo_cmd.angle_fl = 0;
+        servo_cmd.angle_fr = 0;
+        servo_cmd.angle_rl = 0;
+        servo_cmd.angle_rr = 0;
+    }
 
-        :param twist_msg: geometry_msgs::msg::TwistStamped
-        :return: turning radius for the given angle in [m]
-        */
+    void go_straight(const geometry_msgs::msg::TwistStamped &msg) {
+        double linear_vel = msg.twist.linear.x / WHEEL_RADIUS;
+        wheel_cmd.vel_fl = linear_vel;
+        wheel_cmd.vel_fr = linear_vel;
+        wheel_cmd.vel_ml = linear_vel;
+        wheel_cmd.vel_mr = linear_vel;
+        wheel_cmd.vel_rl = linear_vel;
+        wheel_cmd.vel_rr = linear_vel;
+        servo_cmd.angle_fl = 0;
+        servo_cmd.angle_fr = 0;
+        servo_cmd.angle_rl = 0;
+        servo_cmd.angle_rr = 0;
+
+    }
+
+    double twist_to_turning_radius(const geometry_msgs::msg::TwistStamped &msg)
     {
         double infinity = std::numeric_limits<double>::infinity();
-        if (twist_msg.twist.angular.z == 0) {
+        if (msg.twist.angular.z == 0) {
             
             return infinity; // No turning radius if angular velocity is zero
         }
-        double turning_radius = twist_msg.twist.linear.x / twist_msg.twist.angular.z;
-        if (!is_clipped) {
-            return turning_radius;
-        }
-        if (turning_radius == 0) {
-            if (is_intuitive) {
-                if (twist_msg.twist.linear.x == 0) {
-                    return r_MAX; 
-                } else {
-                    turning_radius = r_MIN * vel_max_ / twist_msg.twist.augular.z; 
-                }
-            } else {
-                return r_MAX;
-            }
-        } 
-        if (turning_radius > 0) {
-            turning_radius = std::max(r_MIN, std::min(r_MAX, turning_radius)); 
-        } 
-        else {
-            turning_radius = std::max(-r_MAX, std::min(-r_MIN, turning_radius)); 
-        }
+        double turning_radius = msg.twist.linear.x / msg.twist.angular.z;
         return turning_radius;
     }
 
@@ -308,46 +371,55 @@ public:
         return turning_radius;
     }
     
-    WheelServoCommand_ rotate_in_place(const geometry_msgs::msg::TwistStamped &msg)
+    void rotate_in_place(const geometry_msgs::msg::TwistStamped &msg)
     {
-        WheelServoCommand_ wheel_servo_cmd;
-        // Calculate the corner/servo angles for rotating in place
-        //the angle only depends on the ratio of d3 to d1 and d2
-        wheel_servo_cmd.angle_fl = atan(d3 / d1);   
-        wheel_servo_cmd.angle_rl = -wheel_servo_cmd.angle_fl;
-        wheel_servo_cmd.angle_rr = atan(d2 / d1); 
-        wheel_servo_cmd.angle_fr = -wheel_servo_cmd.angle_rr;
-        // Calculate the wheel speeds for rotating in place
-        double front_wheel_vel = std::hypot(d1, d3) * msg.twist.angular.z / WHEEL_RADIUS;
-        double rear_wheel_vel = std::hypot(d1, d2) * msg.twist.angular.z / WHEEL_RADIUS;
-        double middle_wheel_vel = d4 * msg.twist.angular.z / WHEEL_RADIUS;
-        wheel_servo_cmd.vel_fl = front_wheel_vel;
-        wheel_servo_cmd.vel_fr = front_wheel_vel;
-        wheel_servo_cmd.vel_ml = middle_wheel_vel;
-        wheel_servo_cmd.vel_mr = middle_wheel_vel;
-        wheel_servo_cmd.vel_rl = rear_wheel_vel;
-        wheel_servo_cmd.vel_rr = rear_wheel_vel;
+        wheel_cmd.vel_fl = -float(sqrt(d1*d1+d3*d3) * msg.twist.angular.z / WHEEL_RADIUS);
+        wheel_cmd.vel_rl = -float(sqrt(d1*d1+d2*d2) * msg.twist.angular.z / WHEEL_RADIUS);
 
-        return wheel_servo_cmd;
+        wheel_cmd.vel_ml = -float(d4 * msg.twist.angular.z / WHEEL_RADIUS);
+        wheel_cmd.vel_fr = float(sqrt(d1*d1+d3*d3) * msg.twist.angular.z / WHEEL_RADIUS);
+
+        wheel_cmd.vel_rr = float(d4 * msg.twist.angular.z / WHEEL_RADIUS);
+        wheel_cmd.vel_mr = float(sqrt(d1*d1+d2*d2) * msg.twist.angular.z / WHEEL_RADIUS);
     }
 
+    void publishVelocity() {
 
-    void publishCommand(WheelServoCommand_& wheel_servo_cmd) {
         std_msgs::msg::Float64MultiArray wheel_msg;
-        wheel_msg.data = {wheel_servo_cmd.vel_ml, wheel_servo_cmd.vel_mr, wheel_servo_cmd.vel_fl, wheel_servo_cmd.vel_fr, wheel_servo_cmd.vel_rl, wheel_servo_cmd.vel_rr};
+        wheel_msg.data = {wheel_cmd.vel_ml, wheel_cmd.vel_mr, wheel_cmd.vel_fl, wheel_cmd.vel_fr, wheel_cmd.vel_rl, wheel_cmd.vel_rr};
         wheel_cmd_pub_->publish(wheel_msg);
+    }
+
+    void publishAngles()
+    {
 
         auto servo = trajectory_msgs::msg::JointTrajectory();
         servo.joint_names = {"front_wheel_joint_R", "front_wheel_joint_L", "rear_wheel_joint_R", "rear_wheel_joint_L"};
 
         auto point = trajectory_msgs::msg::JointTrajectoryPoint();
-        point.positions = {wheel_servo_cmd.angle_fr, wheel_servo_cmd.angle_fl,
-            wheel_servo_cmd.angle_rr, wheel_servo_cmd.angle_rl};
+        point.positions = {servo_cmd.angle_fr, servo_cmd.angle_fl,
+            servo_cmd.angle_rr, servo_cmd.angle_rl};
         point.velocities = {0.0, 0.0, 0.0, 0.0};
         point.time_from_start = rclcpp::Duration::from_seconds(0.2);
 
         servo.points.push_back(point);
         servo_cmd_pub_->publish(servo);
+    }
+
+    void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg_state)
+    {
+        std::unordered_map<std::string, double> joint_states = {};
+        for (size_t i = 0; i < msg_state->name.size(); ++i) {
+            joint_states[msg_state->name[i]] = msg_state->position[i];
+        }
+        fl_vel = joint_states["front_wheel_joint_left"];
+        fr_vel = joint_states["front_wheel_joint_right"];
+        ml_vel = joint_states["middle_wheel_joint_left"];
+        mr_vel = joint_states["middle_wheel_joint_right"];
+        rl_vel = joint_states["rear_wheel_joint_left"];
+        rr_vel = joint_states["rear_wheel_joint_right"];
+
+        Odometry(theta);
     }
 
     void jointStateCallback2(const sensor_msgs::msg::JointState::SharedPtr msg_state)
@@ -439,6 +511,53 @@ public:
 
     }
 
+    void Odometry(double angle)
+    {
+        //cheated a little by getting theta(angle) from the IMU instead of calculating it from turning radius and servo angles
+
+
+        current_dl = (fl_vel + fr_vel + ml_vel + mr_vel + rl_vel + rr_vel) * WHEEL_RADIUS / 6;
+        dl = current_dl - pre_dl;
+
+        pre_dl = current_dl;
+
+        x_postion += dl * cos(angle);
+        y_postion += dl * sin(angle);
+        // RCLCPP_INFO(this->get_logger(), "x_position: %f, y_position: %f", x_postion, y_postion);
+        // RCLCPP_INFO(this->get_logger(), "****angle: %f", angle);
+        odom_msg_.header.stamp = this->get_clock()->now();
+        odom_msg_.header.frame_id = "odom";
+
+        odom_msg_.pose.pose.position.x = x_postion;
+        odom_msg_.pose.pose.position.y = y_postion;
+
+        tf2::Quaternion quaternion;
+        quaternion.setRPY(0, 0, angle);
+
+        odom_msg_.pose.pose.orientation.x = quaternion.x();
+        odom_msg_.pose.pose.orientation.y = quaternion.y();
+        odom_msg_.pose.pose.orientation.z = quaternion.z();
+        odom_msg_.pose.pose.orientation.w = quaternion.w();
+
+        static tf2_ros::TransformBroadcaster transform_broadcaster(this);
+        geometry_msgs::msg::TransformStamped transform_stamped;
+
+        transform_stamped.header.stamp = this->get_clock()->now();
+        transform_stamped.header.frame_id = "odom";
+        transform_stamped.child_frame_id = "base_footprint";
+
+        transform_stamped.transform.translation.x = x_postion;
+        transform_stamped.transform.translation.y = y_postion;
+        transform_stamped.transform.translation.z = 0.0;
+
+        transform_stamped.transform.rotation = odom_msg_.pose.pose.orientation;
+        transform_broadcaster.sendTransform(transform_stamped);
+
+        odom_pub_->publish(odom_msg_);
+
+    //    printf("x_pos : %f\ty_pos : %f\n", x_postion,y_postion);
+    }
+
     void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
         tf2::Quaternion quaternion;
         tf2::fromMsg(msg->orientation, quaternion);
@@ -454,9 +573,9 @@ public:
 
 int main(int argc, char* argv[])
 {
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<SimpleController>("simple_controller");
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<SimpleController>("simple_controller");
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
 }
