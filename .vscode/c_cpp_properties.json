@@ -7,11 +7,13 @@
       },
       "includePath": [
         "/home/kevin/rover_gazebo_ws/install/rover_planning/include/**",
+        "/home/kevin/rover_gazebo_ws/install/rover_motion/include/**",
         "/home/kevin/rover_gazebo_ws/install/rover_mapping/include/**",
         "/home/kevin/rover_gazebo_ws/install/rover_localization/include/**",
         "/opt/ros/jazzy/include/**",
         "/home/kevin/rover_gazebo_ws/src/rover_localization/include/**",
         "/home/kevin/rover_gazebo_ws/src/rover_mapping/include/**",
+        "/home/kevin/rover_gazebo_ws/src/rover_motion/include/**",
         "/home/kevin/rover_gazebo_ws/src/rover_planning/include/**",
         "/usr/include/**"
       ],
