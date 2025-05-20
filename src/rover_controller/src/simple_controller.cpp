@@ -170,6 +170,7 @@ public:
             if (msg_twist.twist.angular.z == 0 && msg_twist.twist.linear.x != 0) { // linear velocity
                 command = go_straight(msg_twist);
                 publishCommand(command);
+                RCLCPP_INFO(this->get_logger(), "going straight");
             }
 
             else if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x == 0))  // rotate in place
@@ -181,6 +182,7 @@ public:
 
                 command = rotate_in_place(msg_twist);
                 publishCommand(command);
+                RCLCPP_INFO(this->get_logger(), "rotate in place");
             }
 
             else if((msg_twist.twist.angular.z != 0)&&(msg_twist.twist.linear.x != 0)) // rotation
@@ -195,11 +197,14 @@ public:
 
                 // 4. publish
                 publishCommand(command);
+                RCLCPP_INFO(this->get_logger(), "fl:%f, fr:%f, ml:%f, mr:%f, rl:%f, rr:%f", command.vel_fl, command.vel_fr, command.vel_ml, command.vel_mr, command.vel_rl, command.vel_rr);
             }
 
             else if((msg_twist.twist.angular.z == 0)&&(msg_twist.twist.linear.x == 0)) {
                 command = stop();
                 publishCommand(command);
+                RCLCPP_INFO(this->get_logger(), "stop");
+
             }
 
             delay_ = true;
@@ -332,6 +337,15 @@ public:
             return infinity; // No turning radius if angular velocity is zero
         }
         double turning_radius = msg.twist.linear.x / msg.twist.angular.z;
+        if (turning_radius == 0) {
+            return r_MAX; 
+        } 
+        if (turning_radius > 0) {
+            turning_radius = std::min(r_MIN, std::min(r_MAX, turning_radius));
+        }
+        else {
+            turning_radius = std::max(-r_MAX, std::min(-r_MIN, turning_radius)); 
+        }
         return turning_radius;
     }
 
@@ -377,8 +391,8 @@ public:
             wheel_servo_cmd.angle_rr, wheel_servo_cmd.angle_rl};
         point.velocities = {0.0, 0.0, 0.0, 0.0};
         point.time_from_start = rclcpp::Duration::from_seconds(0.2);
-
         servo.points.push_back(point);
+
         servo_cmd_pub_->publish(servo);
     }
 
