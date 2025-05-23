@@ -15,6 +15,12 @@ def generate_launch_description():
         default_value="false"
     )
 
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    use_sim_time_arg = DeclareLaunchArgument(
+        "use_sim_time",
+        default_value="true"
+    )
+
     gazebo = IncludeLaunchDescription(
         os.path.join(
             get_package_share_directory("rover_description"),
@@ -31,7 +37,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             "use_simple_controller": "True",
-            "use_python": "False"
+            "use_python": "False",
+            "use_sim_time": use_sim_time,
         }.items(),
     )
     
@@ -42,7 +49,7 @@ def generate_launch_description():
             "joystick_teleop.launch.py"
         ),
         launch_arguments={
-            "use_sim_time": "True"
+            "use_sim_time": use_sim_time,
         }.items()
     )
 
@@ -52,6 +59,9 @@ def generate_launch_description():
             "launch",
             "global_localization.launch.py"
         ),
+        launch_arguments={
+            "use_sim_time": use_sim_time,
+        }.items(),
         condition=UnlessCondition(use_slam)
     )
 
@@ -70,6 +80,10 @@ def generate_launch_description():
             "launch",
             "navigation.launch.py"
         ),
+        launch_arguments={
+            "use_sim_time": use_sim_time,
+        }.items(),
+        condition=UnlessCondition(use_slam)
     )
 
     rviz_localization = Node(
@@ -82,7 +96,7 @@ def generate_launch_description():
             )
         ],
         output="screen",
-        parameters=[{"use_sim_time": True}],
+        parameters=[{"use_sim_time": use_sim_time}],
         condition=UnlessCondition(use_slam)
     )
 
@@ -96,18 +110,19 @@ def generate_launch_description():
             )
         ],
         output="screen",
-        parameters=[{"use_sim_time": True}],
+        parameters=[{"use_sim_time": use_sim_time}],
         condition=IfCondition(use_slam)
     )
     
     return LaunchDescription([
         use_slam_arg,
+        use_sim_time_arg,
         gazebo,
         controller,
         joystick,
         localization,
         slam,
-        # navigation,
+        navigation,
         rviz_localization,
         rviz_slam
     ])
